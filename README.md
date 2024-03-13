@@ -13,7 +13,9 @@
 
 ## Usage
 
-Simply run `nt` in your shell and it will prompt a form that will eventually create a task.
+Make sure that `nt` is executable. In Linux you can run `chmod +x nt` inside the repo to achieve that.
+
+After that, simply run `nt` in your shell and it will prompt a form that will eventually create a task.
 
 If you want to omit a certain field (like my own UDAs `estimate` and `brainpower`) you can simply press enter without any value so that field is empty.
 
