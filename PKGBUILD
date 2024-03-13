@@ -7,7 +7,7 @@ arch=('any')
 url="https://github.com/OctavioSardi/nt/tree/v1.0.0"
 license=('MIT')
 depends=('gum' 'fzf')
-source=("https://github.com/OctavioSArdi/$pkgname/archive/refs/tags/v$pkgver.tar.gz")
+source=("$pkgname-$pkgver.tar.gz")
 md5sums=('SKIP')
 
 build() {
