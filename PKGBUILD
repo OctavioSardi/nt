@@ -1,25 +1,21 @@
-# Maintainer: SardiOps
+# Maintainer: SardiOps <octavio.sardi@proton.me>
 pkgname=nt
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="An opinionated bash script designed to make it easier (and prettier) to create new tasks for Taskwarrior"
+pkgdesc="An opinionated bash script to create tasks for Taskwarrior"
 arch=('any')
 url="https://github.com/OctavioSardi/nt/tree/v1.0.0"
 license=('MIT')
+depends=('gum' 'fzf')
 source=("https://github.com/OctavioSArdi/$pkgname/archive/refs/tags/v$pkgver.tar.gz")
-
-prepare() {
-	echo "prepare"
-}
+md5sums=('SKIP')
 
 build() {
-	echo "build"
-}
-
-check() {
-	echo "check"
+	cd "$pkgname-$pkgver/"
+	chmod +x $pkgname
+	sudo mv $pkgname /bin/
 }
 
 package() {
-	echo "package"
+	echo "Copied nt to /bin"
 }
