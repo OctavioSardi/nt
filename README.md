@@ -9,7 +9,7 @@
 ## Install
 
 - Clone this repo and either move or symlink `nt` into `.local/bin`
-- For AUR: `yay -S nt`
+- For AUR: _soon..._
 
 ## Usage
 
