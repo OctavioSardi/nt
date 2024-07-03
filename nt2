@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+
+while true; do
+	# Your main script logic here
+	promptColor="#448488"
+	cursorColor="#fabc2e"
+
+	gum style \
+		--foreground="#fbf1c7" --border-foreground=$cursorColor --border="double" \
+		--align="center" --width="40" --margin="1 2" --padding="1 2" \
+		--bold 'nt: New Task'
+
+	# Get the name of the task
+	gum style --bold --foreground=$promptColor --padding="1" "> What is the name of this task?"
+	task_name=$(gum input --cursor.foreground=$cursorColor --placeholder="Ex. My new task...")
+
+	#########################################################################
+
+	# Get the project for the task
+	gum style --bold --foreground=$promptColor --padding="1" "> Would you like to add the task to a project?"
+	assign_pro_input=$(gum choose --cursor.foreground=$cursorColor --height=18 {"Yes","No"})
+
+	assign_pro_input=$(echo "$assign_pro_input" | tr '[:upper:]' '[:lower:]')
+
+	if [[ $assign_pro_input == "y" || $assign_pro_input == "yes" || -z $assign_pro_input ]]; then
+		## If I select Yes:
+		gum style --bold --foreground=$promptColor --padding="1" "> Would you like to select an existing project or enter a new one?"
+		project_input=$(gum choose --cursor.foreground=$cursorColor --height=18 {"Existing","New"})
+		project_input=$(echo "$project_input" | tr '[:upper:]' '[:lower:]')
+
+		if [[ $project_input == "e" || $project_input == "existing" || -z $project_input ]]; then
+			## If I elect to choose an existing project...
+
+			# project=$(task _unique project | fzf --prompt="Project: ")
+			project=$(task _unique project | gum filter --limit=1 --cursor-text.foreground=$cursorColor --indicator.foreground="#97961a" --match.foreground="#699d6b" --prompt="> Select the project: ")
+
+		# Allow user to create new project if it doesn't exist
+		else
+			project=$(gum input --cursor.foreground=$cursorColor --prompt.foreground="#d65d0e" --prompt="> Enter the name of the new project: " --placeholder="Ex. new.project...")
+		fi
+	else
+		## If I select No:
+		gum style --bold --foreground="#c84732" --padding="1" ">> No project assigned for the new task..."
+	fi
+
+	#########################################################################
+
+	# Ask user wheter he wants to add existing tags
+	gum style --bold --foreground=$promptColor --padding="1" "> Do you want to add existing tags?"
+	add_tags_input=$(gum choose --cursor.foreground=$cursorColor --height=18 {"Yes","No"})
+	add_tags_input=$(echo "$add_tags_input" | tr '[:upper:]' '[:lower:]')
+
+	if [[ $add_tags_input == "y" || $add_tags_input == "yes" || -z $add_tags_input ]]; then
+		# tags=$(task _tags | awk '!/^[A-Z]*$/' | fzf --multi --prompt="Tags (can select multiple using Tab): ")
+		tags=$(task _tags | awk '!/^[A-Z]*$/' | gum filter --no-limit --cursor-text.foreground=$cursorColor --indicator.foreground="#97961a" \
+			--match.foreground="#699d6b" --selected-indicator.foreground="#699d6b" --prompt="> Select tags: ")
+		tags=$(echo "$tags" | awk 'NF' | awk 'ORS=" "')
+	fi
+
+	# Ask user wheter he want to add new tags that do not exist yet
+	gum style --bold --foreground=$promptColor --padding="1" "> Do you want to add new tags?"
+	new_tags_input=$(gum choose --cursor.foreground=$cursorColor --height=18 {"Yes","No"})
+	new_tags_input=$(echo "$new_tags_input" | tr '[:upper:]' '[:lower:]')
+
+	if [[ $new_tags_input == "y" || $new_tags_input == "yes" || -z $new_tags_input ]]; then
+		new_tags=$(gum input --cursor.foreground=$cursorColor --prompt.foreground="#d65d0e" --prompt="> Enter the new tags separated by spaces: " --placeholder="Ex. blue new tag...")
+
+		# Append new tags to existing ones (if any)
+		tags="$tags $new_tags"
+	fi
+
+	# Add a + sign to each tag for Taskwarrior compatibility
+	tags=$(echo "$tags" | awk '{$1=$1};1' | sed 's/^/+/;s/ / +/g')
+
+	#########################################################################
+
+	# Get duedate if there is one
+	gum style --bold --foreground=$promptColor --padding="1" "> When is the due date? Today?"
+	due_response=$(gum choose --cursor.foreground=$cursorColor --height=18 {"Yes","No","-"})
+
+	if [[ "$due_response" == "yes" ]]; then
+		duedate=$(date --rfc-3339=seconds | awk '{print $1}')
+	elif [[ "$due_response" == "no" ]]; then
+		duedate=$(gum input --cursor.foreground=$cursorColor --placeholder=">> Enter date as 'YYYY-MM-DD or +#[ymd]'")
+	else
+		duedate=""
+	fi
+
+	#########################################################################
+
+	# Make the task wait
+	gum style --bold --foreground=$promptColor --padding="1" "> When is the wait date? Today?"
+	wait_response=$(gum choose --cursor.foreground=$cursorColor --height=18 {"Yes","No","-"})
+
+	if [[ "$wait_response" == "yes" ]]; then
+		waitdate=$(date --rfc-3339=seconds | awk '{print $1}')
+	elif [[ "$wait_response" == "no" ]]; then
+		waitdate=$(gum input --cursor.foreground=$cursorColor --placeholder=">> Enter date as 'YYYY-MM-DD or +#[ymd]'")
+	else
+		waitdate=""
+	fi
+
+	#########################################################################
+
+	# Get estimated duration if there is one
+	gum style --bold --foreground=$promptColor --padding="1" "> What is the estimated duration of the task (in minutes)? Leave blank for no estimate: "
+	est_response=$(gum input --cursor.foreground=$cursorColor --placeholder="Ex. 30...")
+
+	if [[ "$est_response" =~ ^[0-9]+$ ]]; then
+		est_time="$est_response"
+		gum style --bold --foreground="#d65d0e" --padding="1" ">> The estimated time for the task is $est_time minutes."
+	else
+		est_time=""
+		gum style --bold --foreground="#d65d0e" --padding="1" ">> No estimated duration input for the task."
+	fi
+
+	#########################################################################
+
+	# Get brain power if there is one
+	gum style --bold --foreground=$promptColor --padding="1" "> What is the difficulty for the task?"
+	brain_response=$(gum choose --cursor.foreground=$cursorColor --height=18 {"L","M","H","Do not know"})
+
+	if [[ "$brain_response" =~ ^[LMH]$ ]]; then
+		brainpower="$brain_response"
+		gum style --bold --foreground="#d65d0e" --padding="1" ">> The difficulty for the task is of size $brainpower."
+	else
+		brainpower=""
+		gum style --bold --foreground="#d65d0e" --padding="1" ">> No brainpower specified for the task."
+	fi
+
+	#########################################################################
+
+	# Get priotity if there is one
+	gum style --bold --foreground=$promptColor --padding="1" "> What is the priority for the task?"
+	prio_response=$(gum choose --cursor.foreground=$cursorColor --height=18 {"L","M","H","Do not know"})
+
+	if [[ "$prio_response" =~ ^[LMHlmh]$ ]]; then
+		priority="$prio_response"
+		gum style --bold --foreground="#d65d0e" --padding="1" ">> The difficulty for the task is $priority."
+	else
+		priority=""
+		gum style --bold --foreground="#d65d0e" --padding="1" ">> No priority specified for the task."
+	fi
+
+	#########################################################################
+
+	# Get task dependencies
+	gum style --bold --foreground=$promptColor --padding="1" "> Does this task depend on other existing tasks?"
+	deps_input=$(gum choose --cursor.foreground=$cursorColor --height=18 {"Yes","No"})
+
+	deps_input=$(echo "$deps_input" | tr '[:upper:]' '[:lower:]')
+
+	if [[ $deps_input == "y" || $deps_input == "yes" ]]; then
+		task ls +BLOCKED or +PENDING and -wishlist
+		deps=$(gum input --cursor.foreground=$cursorColor --placeholder=">> Enter the IDs of the tasks the new task depends on, separated by commas (no spaces): ")
+		gum style --bold --foreground="#d65d0e" --padding="1" ">> Dependencies added to the task..."
+	else
+		## If I select No:
+		gum style --bold --foreground="#d65d0e" --padding="1" ">> No dependencies assigned for the new task..."
+	fi
+
+	#########################################################################
+
+	# Putting it all together
+
+	clear
+
+	printf -v create "%s project:%s %s due:%s wait:%s est:%s brain:%s priority:%s depends:%s \n" "$task_name" "$project" "$tags" "$duedate" "$waitdate" "$est_response" "$brainpower" "$priority" "$deps"
+	gum style --bold --foreground=$promptColor --padding="1" "> The task to be created is as follows:"
+	gum style --bold --italic --foreground="#699d6b" --padding="1" "$(echo $create)"
+	gum confirm --prompt.foreground=$cursorColor && task add $(echo "$create") || gum style --bold --foreground="#d65d0e" --padding="1" ">> Task not created, goodbye!"
+
+	exit 0
+done
